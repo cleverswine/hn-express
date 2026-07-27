@@ -1,0 +1,49 @@
+# Runs the web UI and the background worker together, sharing one SQLite
+# volume. Ollama is expected to run on the host (not in this compose file) —
+# `host.docker.internal` is wired up below so the worker container can reach
+# it at the usual http://localhost:11434.
+#
+# Config: copy .env.example to .env at the repo root and adjust; compose
+# auto-loads it for the ${VAR:-default} substitutions below. Everything has
+# a working default, so .env is optional.
+
+x-env: &env
+  HN_FRONTPAGE_SIZE: ${HN_FRONTPAGE_SIZE:-30}
+  FETCH_INTERVAL_MS: ${FETCH_INTERVAL_MS:-900000}
+  FETCH_TIMEOUT_MS: ${FETCH_TIMEOUT_MS:-10000}
+  PLAYWRIGHT_TIMEOUT_MS: ${PLAYWRIGHT_TIMEOUT_MS:-20000}
+  SUMMARY_BATCH_SIZE: ${SUMMARY_BATCH_SIZE:-5}
+  SUMMARY_CONCURRENCY: ${SUMMARY_CONCURRENCY:-2}
+  SUMMARY_IDLE_SLEEP_MS: ${SUMMARY_IDLE_SLEEP_MS:-15000}
+  OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
+  OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
+  OLLAMA_TIMEOUT_MS: ${OLLAMA_TIMEOUT_MS:-120000}
+
+services:
+  worker:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    environment:
+      <<: *env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - hn-data:/app/db/data
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    environment:
+      <<: *env
+      PORT: ${PORT:-3000}
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      - hn-data:/app/db/data
+    restart: unless-stopped
+
+volumes:
+  hn-data:

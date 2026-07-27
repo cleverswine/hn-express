@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# SQLite database (generated at runtime by the worker/db package)
+db/data/
+
+# Environment overrides (.env.example is the tracked template)
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# Claude Code local settings (machine-specific permissions, not shared)
+.claude/settings.local.json
+
+# Editor / OS cruft
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Test/coverage output, if tests get added later
+coverage/

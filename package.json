@@ -1,0 +1,25 @@
+{
+  "name": "hn-express",
+  "version": "1.0.0",
+  "description": "HN front page viewer with locally-generated (Ollama) article summaries",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently -n web,worker -c blue,green \"npm:start -w web\" \"npm:start -w worker\"",
+    "fetch:once": "npm run fetch:once -w worker",
+    "summarize:once": "npm run summarize:once -w worker",
+    "retry-failed": "npm run retry-failed -w worker",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "workspaces": [
+    "web",
+    "worker",
+    "packages",
+    "db"
+  ],
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
