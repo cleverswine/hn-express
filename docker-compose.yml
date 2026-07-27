@@ -1,5 +1,8 @@
 # Runs the web UI and the background worker together, sharing one SQLite
-# volume. Ollama is expected to run on the host (not in this compose file) —
+# database file bind-mounted from the host at $HOME/.config/hn/data — the
+# same location the db package defaults to when run outside Docker (see
+# db/index.js), so dev mode and Docker both land on the same file. Ollama is
+# expected to run on the host (not in this compose file) —
 # `host.docker.internal` is wired up below so the worker container can reach
 # it at the usual http://localhost:11434.
 #
@@ -29,7 +32,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
-      - hn-data:/app/db/data
+      - ${HOME}/.config/hn/data:/root/.config/hn/data
     restart: unless-stopped
 
   web:
@@ -42,8 +45,5 @@ services:
     ports:
       - "${PORT:-3000}:3000"
     volumes:
-      - hn-data:/app/db/data
+      - ${HOME}/.config/hn/data:/root/.config/hn/data
     restart: unless-stopped
-
-volumes:
-  hn-data:

@@ -101,7 +101,7 @@ Serves the UI at `http://localhost:3000` (or `$PORT`) purely from whatever is al
 
 ## Running with Docker
 
-Each workspace has its own `Dockerfile` (`web/Dockerfile`, `worker/Dockerfile`); both are built from the **repo root** as the build context, since they need the sibling `db/` package. `docker-compose.yml` runs both together, sharing a named volume for the SQLite database.
+Each workspace has its own `Dockerfile` (`web/Dockerfile`, `worker/Dockerfile`); both are built from the **repo root** as the build context, since they need the sibling `db/` package. `docker-compose.yml` runs both together, bind-mounting `$HOME/.config/hn/data` from the host into both containers so they share the same SQLite database — the same path the app uses by default outside Docker (see [Data](#data)).
 
 Ollama itself is expected to keep running on the host, not in a container — the worker reaches it at `http://host.docker.internal:11434` by default (wired up via `extra_hosts` in the compose file, works on Docker 20.10+ on Linux/Mac/Windows).
 
@@ -120,7 +120,7 @@ docker build -f worker/Dockerfile -t hn-express-worker .
 docker run --rm \
   --add-host=host.docker.internal:host-gateway \
   -e OLLAMA_MODEL=llama3.2 \
-  -v hn-data:/app/db/data \
+  -v "$HOME/.config/hn/data:/root/.config/hn/data" \
   hn-express-worker
 ```
 
@@ -128,10 +128,10 @@ docker run --rm \
 
 ```
 docker build -f web/Dockerfile -t hn-express-web .
-docker run --rm -p 3000:3000 -v hn-data:/app/db/data hn-express-web
+docker run --rm -p 3000:3000 -v "$HOME/.config/hn/data:/root/.config/hn/data" hn-express-web
 ```
 
-Uses the same `hn-data` volume name as the worker above so both containers see the same database.
+Uses the same host bind mount as the worker above so both containers see the same database.
 
 ## Configuration
 
@@ -139,4 +139,4 @@ All configuration is via environment variables (see `.env.example` for the full 
 
 ## Data
 
-The SQLite database lives at `db/data/hn.sqlite3` (created automatically on first run). Delete it to start fresh.
+The SQLite database lives at `$HOME/.config/hn/data/hn.sqlite3` (created automatically on first run, including under Docker via a bind mount to the same host path — see [Running with Docker](#running-with-docker)). Delete it to start fresh. Override the location with `DB_PATH` (see `.env.example`).

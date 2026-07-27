@@ -3,8 +3,9 @@
 const { DatabaseSync } = require('node:sqlite');
 const path = require('node:path');
 const fs = require('node:fs');
+const os = require('node:os');
 
-const DEFAULT_DB_PATH = path.join(__dirname, 'data', 'hn.sqlite3');
+const DEFAULT_DB_PATH = path.join(os.homedir(), '.config', 'hn', 'data', 'hn.sqlite3');
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS stories (

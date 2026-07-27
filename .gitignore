@@ -1,7 +1,9 @@
 # Dependencies
 node_modules/
 
-# SQLite database (generated at runtime by the worker/db package)
+# SQLite database (generated at runtime by the worker/db package; lives at
+# $HOME/.config/hn/data by default — see db/index.js — not under the repo,
+# but this is kept in case DB_PATH is ever pointed back into the repo)
 db/data/
 
 # Environment overrides (.env.example is the tracked template)
