@@ -141,7 +141,9 @@ function getFrontPage(limit = 30) {
  * Stories first seen in [startSec, endSec) — falls off the front page never
  * removes a row, it just clears `rank`, so this is independent of rank and
  * reaches back through full history. Only fully-summarized stories are
- * included, matching what the front page shows.
+ * included, matching what the front page shows. Stories currently on the
+ * front page (rank IS NOT NULL) are excluded so the archive doesn't
+ * duplicate what's already visible there.
  */
 function getHistoryDay(startSec, endSec) {
   const conn = getDb();
@@ -151,7 +153,7 @@ function getHistoryDay(startSec, endSec) {
               (image_data IS NOT NULL) AS has_image,
               summary_status, summary_error, model_used, summarized_at, fetched_at, first_seen_at
        FROM stories
-       WHERE first_seen_at >= ? AND first_seen_at < ? AND summary_status = 'done'
+       WHERE first_seen_at >= ? AND first_seen_at < ? AND summary_status = 'done' AND rank IS NULL
        ORDER BY first_seen_at DESC`
     )
     .all(startSec, endSec);

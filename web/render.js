@@ -73,17 +73,17 @@ function renderLayout({ body, refreshTag = '', headerExtra = '' }) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   ${refreshTag}
-  <title>HN Express</title>
+  <title>Hacker News Enhanced</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <header>
     <div class="header-row">
-      <h1><a href="/">HN Express</a></h1>
+      <h1><a href="/">Hacker News Enhanced</a></h1>
       ${headerExtra}
     </div>
-    <p class="tagline">The HN front page, with AI summaries generated locally.</p>
+    <p class="tagline">The HN front page and archives, enhanced with AI generated summaries</p>
   </header>
   <main>
     ${body}
