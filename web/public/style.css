@@ -135,13 +135,9 @@ main {
   grid-column: 2;
   grid-row: 2;
   margin: 1rem 0 0;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   color: var(--fg);
   opacity: 0.8;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 .summary-pending {
