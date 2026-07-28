@@ -156,25 +156,37 @@ main {
   padding: 2rem 0;
 }
 
+.archive-link,
+.archive-nav a {
+  display: inline-block;
+  line-height: 1;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card-bg);
+  text-decoration: none;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
 .archive-link {
   color: var(--muted);
   font-size: 0.85rem;
-  text-decoration: none;
   white-space: nowrap;
 }
 
 .archive-link:hover {
   color: var(--fg);
-  text-decoration: underline;
+  border-color: var(--muted);
 }
 
 .archive-nav a {
-  color: var(--accent);
-  text-decoration: none;
+  color: var(--fg);
+  font-size: 0.85rem;
 }
 
 .archive-nav a:hover {
-  text-decoration: underline;
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .page-footer {
