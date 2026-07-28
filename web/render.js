@@ -66,7 +66,7 @@ function renderStory(story) {
     </article>`;
 }
 
-function renderLayout({ body, refreshTag = '' }) {
+function renderLayout({ body, refreshTag = '', headerExtra = '' }) {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -79,7 +79,10 @@ function renderLayout({ body, refreshTag = '' }) {
 </head>
 <body>
   <header>
-    <h1><a href="/">HN Express</a></h1>
+    <div class="header-row">
+      <h1><a href="/">HN Express</a></h1>
+      ${headerExtra}
+    </div>
     <p class="tagline">The HN front page, with AI summaries generated locally.</p>
   </header>
   <main>
@@ -95,9 +98,9 @@ function renderPage(stories) {
   const list = stories.length
     ? stories.map(renderStory).join('\n')
     : '<p class="empty">No stories yet — the worker hasn\'t run.</p>';
-  const archiveLink = '<p class="archive-link"><a href="/archive">Browse archive &rarr;</a></p>';
+  const headerExtra = '<a class="archive-link" href="/archive">Archive</a>';
 
-  return renderLayout({ body: `${archiveLink}\n${list}`, refreshTag });
+  return renderLayout({ body: list, refreshTag, headerExtra });
 }
 
 function renderArchivePage({ date, stories, prevDate, nextDate }) {
