@@ -8,8 +8,6 @@ Three npm workspaces sharing one SQLite file:
 - `worker/` — background process: polls the HN API into the database, then summarizes articles (fetch → extract text/image, falling back to a headless browser when needed → Ollama).
 - `web/` — Express server that renders the front page from the database.
 
-See [`PLAN.md`](./PLAN.md) for the full design.
-
 ## Prerequisites
 
 - Node.js 22.5+ (uses the built-in `node:sqlite`; developed on Node 26).
