@@ -12,8 +12,31 @@ const SUMMARY_BATCH_SIZE = Number(process.env.SUMMARY_BATCH_SIZE) || 5;
 const SUMMARY_IDLE_SLEEP_MS = Number(process.env.SUMMARY_IDLE_SLEEP_MS) || 15000;
 const RETRY_FAILED_ON_START = process.argv.includes('--retry-failed') || process.env.RETRY_FAILED === 'true';
 
+// Summarization is the only thing that hits Ollama, so it's the only loop
+// gated to active hours (local time, per TZ) — no point burning home-server
+// GPU time summarizing stories overnight when nobody's reading them.
+const ACTIVE_HOURS_START = Number(process.env.ACTIVE_HOURS_START ?? 7);
+const ACTIVE_HOURS_END = Number(process.env.ACTIVE_HOURS_END ?? 23);
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isActiveNow() {
+  if (ACTIVE_HOURS_START === ACTIVE_HOURS_END) return true;
+  const hour = new Date().getHours();
+  if (ACTIVE_HOURS_START < ACTIVE_HOURS_END) {
+    return hour >= ACTIVE_HOURS_START && hour < ACTIVE_HOURS_END;
+  }
+  return hour >= ACTIVE_HOURS_START || hour < ACTIVE_HOURS_END;
+}
+
+function msUntilActive() {
+  const now = new Date();
+  const start = new Date(now);
+  start.setHours(ACTIVE_HOURS_START, 0, 0, 0);
+  if (start <= now) start.setDate(start.getDate() + 1);
+  return start - now;
 }
 
 async function fetchLoop() {
@@ -30,6 +53,16 @@ async function fetchLoop() {
 
 async function summarizeLoop() {
   while (true) {
+    if (!isActiveNow()) {
+      const wait = msUntilActive();
+      log(
+        `[summarize] outside active hours (${ACTIVE_HOURS_START}:00-${ACTIVE_HOURS_END}:00) — sleeping ${Math.round(
+          wait / 60000
+        )} min`
+      );
+      await sleep(wait);
+      continue;
+    }
     let processed = 0;
     try {
       processed = await summarizeBatch(SUMMARY_BATCH_SIZE);
