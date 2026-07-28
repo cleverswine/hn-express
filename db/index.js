@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS stories (
   time            INTEGER,
   text            TEXT,
   summary         TEXT,
-  image_url       TEXT,
+  image_data      BLOB,
+  image_type      TEXT,
   summary_status  TEXT NOT NULL DEFAULT 'pending',
   summary_error   TEXT,
   model_used      TEXT,
@@ -35,6 +36,18 @@ CREATE INDEX IF NOT EXISTS idx_stories_summary_status ON stories(summary_status)
 
 let db = null;
 
+/**
+ * Migrate databases created before images were stored in-row: add the new
+ * columns and drop the old URL column. No-op on a fresh database, since the
+ * CREATE TABLE above already has the current shape.
+ */
+function migrateImageColumns(conn) {
+  const cols = conn.prepare('PRAGMA table_info(stories)').all().map((c) => c.name);
+  if (!cols.includes('image_data')) conn.exec('ALTER TABLE stories ADD COLUMN image_data BLOB');
+  if (!cols.includes('image_type')) conn.exec('ALTER TABLE stories ADD COLUMN image_type TEXT');
+  if (cols.includes('image_url')) conn.exec('ALTER TABLE stories DROP COLUMN image_url');
+}
+
 function getDb() {
   if (db) return db;
 
@@ -45,6 +58,7 @@ function getDb() {
   db.exec('PRAGMA journal_mode = WAL');
   db.exec('PRAGMA foreign_keys = ON');
   db.exec(SCHEMA);
+  migrateImageColumns(db);
 
   return db;
 }
@@ -113,8 +127,18 @@ function upsertFrontPage(items) {
 function getFrontPage(limit = 30) {
   const conn = getDb();
   return conn
-    .prepare('SELECT * FROM stories WHERE rank IS NOT NULL ORDER BY rank ASC LIMIT ?')
+    .prepare(
+      `SELECT id, rank, hn_type, title, url, domain, by, score, descendants, time, summary,
+              (image_data IS NOT NULL) AS has_image,
+              summary_status, summary_error, model_used, summarized_at, fetched_at, first_seen_at
+       FROM stories WHERE rank IS NOT NULL ORDER BY rank ASC LIMIT ?`
+    )
     .all(limit);
+}
+
+function getImage(id) {
+  const conn = getDb();
+  return conn.prepare('SELECT image_data, image_type FROM stories WHERE id = ?').get(id);
 }
 
 function getPending(limit = 5) {
@@ -132,19 +156,27 @@ function markProcessing(id) {
     .run(id);
 }
 
-function saveSummary(id, { summary, imageUrl, model }) {
+function saveSummary(id, { summary, imageData, imageType, model }) {
   getDb()
     .prepare(
       `UPDATE stories SET
          summary_status = 'done',
          summary = :summary,
-         image_url = :imageUrl,
+         image_data = :imageData,
+         image_type = :imageType,
          model_used = :model,
          summary_error = NULL,
          summarized_at = :now
        WHERE id = :id`
     )
-    .run({ id, summary, imageUrl: imageUrl || null, model: model || null, now: Math.floor(Date.now() / 1000) });
+    .run({
+      id,
+      summary,
+      imageData: imageData || null,
+      imageType: imageType || null,
+      model: model || null,
+      now: Math.floor(Date.now() / 1000),
+    });
 }
 
 function markFailed(id, error) {
@@ -174,6 +206,7 @@ module.exports = {
   getDb,
   upsertFrontPage,
   getFrontPage,
+  getImage,
   getPending,
   markProcessing,
   saveSummary,

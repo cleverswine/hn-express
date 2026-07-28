@@ -44,12 +44,11 @@ function renderSummary(story) {
 function renderStory(story) {
   const hnUrl = `https://news.ycombinator.com/item?id=${story.id}`;
   const link = story.url || hnUrl;
-  const image =
-    story.summary_status === 'done' && story.image_url
-      ? `<a class="story-media" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">
-           <img src="${escapeHtml(story.image_url)}" alt="" loading="lazy">
-         </a>`
-      : `<div class="story-media story-media-placeholder" aria-hidden="true"></div>`;
+  const image = story.has_image
+    ? `<a class="story-media" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">
+         <img src="/image/${story.id}" alt="" loading="lazy">
+       </a>`
+    : `<div class="story-media story-media-placeholder" aria-hidden="true"></div>`;
 
   return `
     <article class="story">

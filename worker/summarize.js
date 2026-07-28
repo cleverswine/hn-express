@@ -3,7 +3,7 @@
 const { JSDOM } = require('jsdom');
 const db = require('db');
 const { mapPool } = require('./lib/pool');
-const { extractArticle } = require('./extract');
+const { extractArticle, downloadImage } = require('./extract');
 const { summarizeText, OLLAMA_MODEL } = require('./ollama');
 const { describeError } = require('./lib/errors');
 const { log, logError } = require('./lib/log');
@@ -40,7 +40,13 @@ async function summarizeOne(story) {
     }
 
     const summary = await summarizeText(story.title, text);
-    db.saveSummary(story.id, { summary, imageUrl, model: OLLAMA_MODEL });
+    const image = await downloadImage(imageUrl);
+    db.saveSummary(story.id, {
+      summary,
+      imageData: image?.data,
+      imageType: image?.contentType,
+      model: OLLAMA_MODEL,
+    });
     return { id: story.id, status: 'done' };
   } catch (err) {
     const message = describeError(err);

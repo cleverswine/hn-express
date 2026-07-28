@@ -7,8 +7,10 @@ const { logError } = require('./lib/log');
 
 const FETCH_TIMEOUT_MS = Number(process.env.FETCH_TIMEOUT_MS) || 10000;
 const PLAYWRIGHT_TIMEOUT_MS = Number(process.env.PLAYWRIGHT_TIMEOUT_MS) || 20000;
+const IMAGE_FETCH_TIMEOUT_MS = Number(process.env.IMAGE_FETCH_TIMEOUT_MS) || 10000;
 const MAX_CONTENT_CHARS = 6000;
 const MIN_TEXT_LENGTH = 200;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
@@ -94,6 +96,42 @@ async function extractWithPlaywright(url) {
 }
 
 /**
+ * Download a representative image so it can be stored in-row and served
+ * without depending on the source site staying reachable. Returns null
+ * (rather than throwing) for anything that isn't a reasonably-sized image,
+ * since the image is a nice-to-have alongside the summary, not required.
+ */
+async function downloadImage(url) {
+  if (!url) return null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), IMAGE_FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      redirect: 'follow',
+      headers: { 'User-Agent': USER_AGENT, Accept: 'image/*' },
+    });
+    if (!res.ok) return null;
+
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.startsWith('image/')) return null;
+
+    const contentLength = Number(res.headers.get('content-length') || 0);
+    if (contentLength > MAX_IMAGE_BYTES) return null;
+
+    const data = Buffer.from(await res.arrayBuffer());
+    if (data.length === 0 || data.length > MAX_IMAGE_BYTES) return null;
+
+    return { data, contentType };
+  } catch (err) {
+    logError(`[extract] failed to download image ${url}: ${describeError(err)}`);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
  * Extract main article text + a representative image from a URL. Tries a
  * plain fetch first; falls back to a headless-browser render (Playwright)
  * when the fetch fails or yields suspiciously little text (JS-rendered or
@@ -130,4 +168,4 @@ async function extractArticle(url) {
   }
 }
 
-module.exports = { extractArticle, MAX_CONTENT_CHARS };
+module.exports = { extractArticle, downloadImage, MAX_CONTENT_CHARS };
