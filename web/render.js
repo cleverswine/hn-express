@@ -57,11 +57,10 @@ function renderStory(story) {
       <div class="story-body">
         <h2 class="story-title">
           <a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">${escapeHtml(story.title)}</a>
-          ${story.domain ? `<span class="domain">(${escapeHtml(story.domain)})</span>` : ''}
         </h2>
         <div class="meta">
-          ${story.score ?? 0} points by ${escapeHtml(story.by)} &middot; ${formatAge(story.time)}
-          &middot; <a href="${hnUrl}">${story.descendants ?? 0} comments</a>
+          ${story.domain ? `${escapeHtml(story.domain)} &middot; ` : ''}${story.score ?? 0} points by ${escapeHtml(story.by)}
+          &middot; ${formatAge(story.time)} &middot; <a href="${hnUrl}">${story.descendants ?? 0} comments</a>
         </div>
       </div>
       ${renderSummary(story)}
