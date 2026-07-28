@@ -160,9 +160,9 @@ main {
 .archive-nav a {
   display: inline-block;
   line-height: 1;
-  padding: 0.5rem 0.7rem;
+  padding: 0.7rem 0.7rem 0.5rem 0.7rem;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 10px;
   background: var(--card-bg);
   text-decoration: none;
   transition: border-color 0.15s ease, color 0.15s ease;
