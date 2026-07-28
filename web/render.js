@@ -66,10 +66,7 @@ function renderStory(story) {
     </article>`;
 }
 
-function renderPage(stories) {
-  const hasPending = stories.some((s) => s.summary_status === 'pending' || s.summary_status === 'processing');
-  const refreshTag = hasPending ? '<meta http-equiv="refresh" content="20">' : '';
-
+function renderLayout({ body, refreshTag = '' }) {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -85,10 +82,35 @@ function renderPage(stories) {
     <p class="tagline">The HN front page, with AI summaries generated locally.</p>
   </header>
   <main>
-    ${stories.length ? stories.map(renderStory).join('\n') : '<p class="empty">No stories yet — the worker hasn\'t run.</p>'}
+    ${body}
   </main>
 </body>
 </html>`;
 }
 
-module.exports = { renderPage };
+function renderPage(stories) {
+  const hasPending = stories.some((s) => s.summary_status === 'pending' || s.summary_status === 'processing');
+  const refreshTag = hasPending ? '<meta http-equiv="refresh" content="20">' : '';
+  const list = stories.length
+    ? stories.map(renderStory).join('\n')
+    : '<p class="empty">No stories yet — the worker hasn\'t run.</p>';
+  const archiveLink = '<p class="archive-link"><a href="/archive">Browse archive &rarr;</a></p>';
+
+  return renderLayout({ body: `${archiveLink}\n${list}`, refreshTag });
+}
+
+function renderArchivePage({ date, stories, prevDate, nextDate }) {
+  const nav = `
+    <nav class="archive-nav">
+      <a href="/archive/${prevDate}">&larr; ${prevDate}</a>
+      <span class="archive-date">${date}</span>
+      ${nextDate ? `<a href="/archive/${nextDate}">${nextDate} &rarr;</a>` : '<span class="nav-disabled">&rarr;</span>'}
+    </nav>`;
+  const list = stories.length
+    ? stories.map(renderStory).join('\n')
+    : '<p class="empty">No stories for this day.</p>';
+
+  return renderLayout({ body: `${nav}\n${list}` });
+}
+
+module.exports = { renderPage, renderArchivePage };

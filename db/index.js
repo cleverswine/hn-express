@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS stories (
 );
 CREATE INDEX IF NOT EXISTS idx_stories_rank ON stories(rank);
 CREATE INDEX IF NOT EXISTS idx_stories_summary_status ON stories(summary_status);
+CREATE INDEX IF NOT EXISTS idx_stories_first_seen_at ON stories(first_seen_at);
 `;
 
 let db = null;
@@ -136,6 +137,26 @@ function getFrontPage(limit = 30) {
     .all(limit);
 }
 
+/**
+ * Stories first seen in [startSec, endSec) — falls off the front page never
+ * removes a row, it just clears `rank`, so this is independent of rank and
+ * reaches back through full history. Only fully-summarized stories are
+ * included, matching what the front page shows.
+ */
+function getHistoryDay(startSec, endSec) {
+  const conn = getDb();
+  return conn
+    .prepare(
+      `SELECT id, hn_type, title, url, domain, by, score, descendants, time, summary,
+              (image_data IS NOT NULL) AS has_image,
+              summary_status, summary_error, model_used, summarized_at, fetched_at, first_seen_at
+       FROM stories
+       WHERE first_seen_at >= ? AND first_seen_at < ? AND summary_status = 'done'
+       ORDER BY first_seen_at DESC`
+    )
+    .all(startSec, endSec);
+}
+
 function getImage(id) {
   const conn = getDb();
   return conn.prepare('SELECT image_data, image_type FROM stories WHERE id = ?').get(id);
@@ -206,6 +227,7 @@ module.exports = {
   getDb,
   upsertFrontPage,
   getFrontPage,
+  getHistoryDay,
   getImage,
   getPending,
   markProcessing,
