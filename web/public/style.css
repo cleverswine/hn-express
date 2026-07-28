@@ -177,6 +177,13 @@ main {
   text-decoration: underline;
 }
 
+.page-footer {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
 .archive-nav {
   display: flex;
   align-items: center;

@@ -98,23 +98,29 @@ function renderPage(stories) {
   const list = stories.length
     ? stories.map(renderStory).join('\n')
     : '<p class="empty">No stories yet — the worker hasn\'t run.</p>';
-  const headerExtra = '<a class="archive-link" href="/archive">Archive</a>';
+  const archiveLink = '<a class="archive-link" href="/archive">Archive</a>';
+  const footer = `<div class="page-footer">${archiveLink}</div>`;
 
-  return renderLayout({ body: list, refreshTag, headerExtra });
+  return renderLayout({ body: `${list}\n${footer}`, refreshTag, headerExtra: archiveLink });
 }
 
-function renderArchivePage({ date, stories, prevDate, nextDate }) {
-  const nav = `
+function renderArchiveNav({ date, prevDate, nextDate }) {
+  return `
     <nav class="archive-nav">
       <a href="/archive/${prevDate}">&larr; ${prevDate}</a>
       <span class="archive-date">${date}</span>
       ${nextDate ? `<a href="/archive/${nextDate}">${nextDate} &rarr;</a>` : '<span class="nav-disabled">&rarr;</span>'}
     </nav>`;
+}
+
+function renderArchivePage({ date, stories, prevDate, nextDate }) {
+  const nav = renderArchiveNav({ date, prevDate, nextDate });
   const list = stories.length
     ? stories.map(renderStory).join('\n')
     : '<p class="empty">No stories for this day.</p>';
+  const footer = `<div class="page-footer">${nav}</div>`;
 
-  return renderLayout({ body: `${nav}\n${list}` });
+  return renderLayout({ body: `${nav}\n${list}\n${footer}` });
 }
 
 module.exports = { renderPage, renderArchivePage };
