@@ -2,6 +2,12 @@
 
 Shows the Hacker News front page (via the official HN API, in HN's own rank order), with an AI-generated summary and representative image for each linked article. Summaries are generated in the background by a locally-running [Ollama](https://ollama.com) model — never on the request path. The web UI is plain server-rendered HTML that only reads from a local SQLite database.
 
+## Screenshot
+
+![screenshot](screenshot.png)
+
+## Code organization
+
 Three npm workspaces sharing one SQLite file:
 
 - `db/` — SQLite schema + query helpers.
