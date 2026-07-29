@@ -41,6 +41,12 @@ app.get('/', (req, res) => {
   res.type('html').send(renderPage(stories));
 });
 
+app.post('/read-all', (req, res) => {
+  const stories = db.getFrontPage(HN_FRONTPAGE_SIZE);
+  db.markRead(stories.map((s) => s.id));
+  res.redirect('/');
+});
+
 app.get('/archive', (req, res) => {
   res.redirect(`/archive/${formatDate(new Date())}`);
 });
@@ -63,6 +69,17 @@ app.get('/archive/:date', (req, res) => {
       nextDate: dateStr < today ? formatDate(addDays(date, 1)) : null,
     })
   );
+});
+
+app.post('/archive/:date/read-all', (req, res) => {
+  const date = parseDate(req.params.date);
+  if (!date) return res.status(404).send('Not found');
+
+  const startSec = Math.floor(date.getTime() / 1000);
+  const endSec = startSec + 86400;
+  const stories = db.getHistoryDay(startSec, endSec);
+  db.markRead(stories.map((s) => s.id));
+  res.redirect(`/archive/${req.params.date}`);
 });
 
 app.get('/image/:id', (req, res) => {

@@ -28,7 +28,8 @@ CREATE TABLE IF NOT EXISTS stories (
   model_used      TEXT,
   summarized_at   INTEGER,
   fetched_at      INTEGER,
-  first_seen_at   INTEGER NOT NULL
+  first_seen_at   INTEGER NOT NULL,
+  read_at         INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_stories_rank ON stories(rank);
 CREATE INDEX IF NOT EXISTS idx_stories_summary_status ON stories(summary_status);
@@ -49,6 +50,15 @@ function migrateImageColumns(conn) {
   if (cols.includes('image_url')) conn.exec('ALTER TABLE stories DROP COLUMN image_url');
 }
 
+/**
+ * Migrate databases created before read tracking existed. No-op on a fresh
+ * database, since the CREATE TABLE above already has the current shape.
+ */
+function migrateReadColumn(conn) {
+  const cols = conn.prepare('PRAGMA table_info(stories)').all().map((c) => c.name);
+  if (!cols.includes('read_at')) conn.exec('ALTER TABLE stories ADD COLUMN read_at INTEGER');
+}
+
 function getDb() {
   if (db) return db;
 
@@ -60,6 +70,7 @@ function getDb() {
   db.exec('PRAGMA foreign_keys = ON');
   db.exec(SCHEMA);
   migrateImageColumns(db);
+  migrateReadColumn(db);
 
   return db;
 }
@@ -131,6 +142,7 @@ function getFrontPage(limit = 30) {
     .prepare(
       `SELECT id, rank, hn_type, title, url, domain, by, score, descendants, time, summary,
               (image_data IS NOT NULL) AS has_image,
+              (read_at IS NOT NULL) AS is_read,
               summary_status, summary_error, model_used, summarized_at, fetched_at, first_seen_at
        FROM stories WHERE rank IS NOT NULL ORDER BY rank ASC LIMIT ?`
     )
@@ -151,12 +163,27 @@ function getHistoryDay(startSec, endSec) {
     .prepare(
       `SELECT id, hn_type, title, url, domain, by, score, descendants, time, summary,
               (image_data IS NOT NULL) AS has_image,
+              (read_at IS NOT NULL) AS is_read,
               summary_status, summary_error, model_used, summarized_at, fetched_at, first_seen_at
        FROM stories
        WHERE first_seen_at >= ? AND first_seen_at < ? AND summary_status = 'done' AND rank IS NULL
        ORDER BY first_seen_at DESC`
     )
     .all(startSec, endSec);
+}
+
+/**
+ * Mark the given story ids as read (idempotent — already-read stories keep
+ * their original read_at).
+ */
+function markRead(ids) {
+  if (!ids.length) return;
+  const conn = getDb();
+  const now = Math.floor(Date.now() / 1000);
+  const placeholders = ids.map(() => '?').join(',');
+  conn
+    .prepare(`UPDATE stories SET read_at = ? WHERE id IN (${placeholders}) AND read_at IS NULL`)
+    .run(now, ...ids);
 }
 
 function getImage(id) {
@@ -230,6 +257,7 @@ module.exports = {
   upsertFrontPage,
   getFrontPage,
   getHistoryDay,
+  markRead,
   getImage,
   getPending,
   markProcessing,

@@ -51,7 +51,7 @@ function renderStory(story) {
     : `<div class="story-media story-media-placeholder" aria-hidden="true"></div>`;
 
   return `
-    <article class="story">
+    <article class="story${story.is_read ? ' read' : ''}">
       ${image}
       <div class="story-body">
         <h2 class="story-title">
@@ -92,6 +92,13 @@ function renderLayout({ body, refreshTag = '', headerExtra = '' }) {
 </html>`;
 }
 
+function renderMarkReadForm(action) {
+  return `
+    <form class="mark-read-form" method="POST" action="${action}">
+      <button type="submit" class="mark-read-btn">Mark all as read</button>
+    </form>`;
+}
+
 function renderPage(stories) {
   const hasPending = stories.some((s) => s.summary_status === 'pending' || s.summary_status === 'processing');
   const refreshTag = hasPending ? '<meta http-equiv="refresh" content="20">' : '';
@@ -99,7 +106,7 @@ function renderPage(stories) {
     ? stories.map(renderStory).join('\n')
     : '<p class="empty">No stories yet — the worker hasn\'t run.</p>';
   const archiveLink = '<a class="archive-link" href="/archive">Archive</a>';
-  const footer = `<div class="page-footer">${archiveLink}</div>`;
+  const footer = `<div class="page-footer">${archiveLink}${renderMarkReadForm('/read-all')}</div>`;
 
   return renderLayout({ body: `${list}\n${footer}`, refreshTag, headerExtra: archiveLink });
 }
@@ -118,7 +125,7 @@ function renderArchivePage({ date, stories, prevDate, nextDate }) {
   const list = stories.length
     ? stories.map(renderStory).join('\n')
     : '<p class="empty">No stories for this day.</p>';
-  const footer = `<div class="page-footer">${nav}</div>`;
+  const footer = `<div class="page-footer">${nav}${renderMarkReadForm(`/archive/${date}/read-all`)}</div>`;
 
   return renderLayout({ body: `${nav}\n${list}\n${footer}` });
 }
