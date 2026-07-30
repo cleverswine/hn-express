@@ -174,7 +174,9 @@ function getHistoryDay(startSec, endSec) {
 
 /**
  * Mark the given story ids as read (idempotent — already-read stories keep
- * their original read_at).
+ * their original read_at). A story whose summarization hasn't started yet
+ * (status still 'pending') has its summary canceled instead, since there's
+ * no point summarizing something the reader already moved past.
  */
 function markRead(ids) {
   if (!ids.length) return;
@@ -182,7 +184,12 @@ function markRead(ids) {
   const now = Math.floor(Date.now() / 1000);
   const placeholders = ids.map(() => '?').join(',');
   conn
-    .prepare(`UPDATE stories SET read_at = ? WHERE id IN (${placeholders}) AND read_at IS NULL`)
+    .prepare(
+      `UPDATE stories SET
+         read_at = ?,
+         summary_status = CASE WHEN summary_status = 'pending' THEN 'canceled' ELSE summary_status END
+       WHERE id IN (${placeholders}) AND read_at IS NULL`
+    )
     .run(now, ...ids);
 }
 
