@@ -60,6 +60,7 @@ function renderStory(story) {
         <div class="meta">
           ${story.domain ? `${escapeHtml(story.domain)} &middot; ` : ''}${story.score ?? 0} points by ${escapeHtml(story.by)}
           &middot; ${formatAge(story.time)} &middot; <a href="${hnUrl}">${story.descendants ?? 0} comments</a>
+          <span class="meta-updated" title="${story.fetched_at ? escapeHtml(new Date(story.fetched_at * 1000).toLocaleString()) : ''}">(updated ${formatAge(story.fetched_at)})</span>
         </div>
       </div>
       ${renderSummary(story)}

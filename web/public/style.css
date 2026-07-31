@@ -135,6 +135,11 @@ main {
   color: var(--muted);
 }
 
+.meta-updated {
+  opacity: 0.7;
+  cursor: default;
+}
+
 .summary {
   grid-column: 2;
   grid-row: 2;
