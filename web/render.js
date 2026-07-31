@@ -1,5 +1,15 @@
 'use strict';
 
+const ICONS = {
+  archive: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="14" rx="2"></rect><path d="M3 7l2-4h14l2 4"></path><path d="M9 12h6"></path></svg>',
+  admin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2"></path><circle cx="16" cy="6" r="2"></circle><path d="M4 12h2M10 12h10"></path><circle cx="8" cy="12" r="2"></circle><path d="M4 18h10M18 18h2"></path><circle cx="16" cy="18" r="2"></circle></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>',
+  eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
+  eyeOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A10.94 10.94 0 0112 4c7 0 11 7 11 7a17.4 17.4 0 01-3.13 4.03M6.6 6.6C3.9 8.3 2 12 2 12s4 7 10 7a10 10 0 004.9-1.3"></path><path d="M14.12 14.12a3 3 0 11-4.24-4.24"></path><path d="M1 1l22 22"></path></svg>',
+  chevronLeft: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>',
+  chevronRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>',
+};
+
 function escapeHtml(str) {
   return String(str ?? '').replace(/[&<>"']/g, (c) => ({
     '&': '&amp;',
@@ -41,12 +51,13 @@ function renderSummary(story) {
   }
 }
 
-function renderStory(story) {
+function renderStory(story, isLcpCandidate = false) {
   const hnUrl = `https://news.ycombinator.com/item?id=${story.id}`;
   const link = story.url || hnUrl;
+  const imgAttrs = isLcpCandidate ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"';
   const image = story.has_image
     ? `<a class="story-media" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">
-         <img src="/image/${story.id}" alt="" loading="lazy">
+         <img src="/image/${story.id}" alt="" ${imgAttrs}>
        </a>`
     : `<div class="story-media story-media-placeholder" aria-hidden="true"></div>`;
 
@@ -67,7 +78,7 @@ function renderStory(story) {
     </article>`;
 }
 
-function renderLayout({ body, refreshTag = '', headerExtra = '' }) {
+function renderLayout({ body, refreshTag = '', headerExtra = '', liveBadge = false }) {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -78,16 +89,21 @@ function renderLayout({ body, refreshTag = '', headerExtra = '' }) {
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <header>
-    <div class="header-row">
-      <h1><a href="/">Hacker News Enhanced</a></h1>
-      ${headerExtra}
+    <div class="header-inner">
+      <div class="header-row">
+        <div class="brand">
+          <h1><a href="/">Hacker News Enhanced</a></h1>
+          ${liveBadge ? '<span class="live-badge"><span class="live-dot"></span>Updating</span>' : ''}
+        </div>
+        ${headerExtra}
+      </div>
+      <p class="tagline">The HN front page and archives, enhanced with AI generated summaries</p>
     </div>
-    <p class="tagline">The HN front page and archives, enhanced with AI generated summaries</p>
   </header>
   <main>
     ${body}
@@ -98,16 +114,16 @@ function renderLayout({ body, refreshTag = '', headerExtra = '' }) {
 
 function renderMarkReadForm(action) {
   return `
-    <form class="mark-read-form" method="POST" action="${action}">
-      <button type="submit" class="mark-read-btn">Mark all as read</button>
+    <form class="btn-form" method="POST" action="${action}">
+      <button type="submit" class="btn btn-primary">${ICONS.check}<span>Mark all as read</span></button>
     </form>`;
 }
 
 function renderHideReadToggle(currentPath, hideRead) {
   return `
-    <form class="hide-read-form" method="POST" action="/toggle-hide-read">
+    <form class="btn-form" method="POST" action="/toggle-hide-read">
       <input type="hidden" name="returnTo" value="${escapeHtml(currentPath)}">
-      <button type="submit" class="hide-read-btn">${hideRead ? 'Show read stories' : 'Hide read stories'}</button>
+      <button type="submit" class="btn btn-ghost">${hideRead ? ICONS.eye : ICONS.eyeOff}<span>${hideRead ? 'Show read stories' : 'Hide read stories'}</span></button>
     </form>`;
 }
 
@@ -116,57 +132,63 @@ function renderHiddenNote(hideRead, hiddenCount) {
   return `<p class="hidden-note">${hiddenCount} read stor${hiddenCount === 1 ? 'y' : 'ies'} hidden</p>`;
 }
 
-function renderNavLinks() {
+function renderNavLinks(active = null) {
   return `
-    <div class="nav-links">
-      <a class="nav-link" href="/archive">Archive</a>
-      <a class="nav-link" href="/admin">Admin</a>
-    </div>`;
+    <nav class="nav-links" aria-label="Sections">
+      <a class="nav-pill" href="/archive"${active === 'archive' ? ' aria-current="page"' : ''}>${ICONS.archive}<span>Archive</span></a>
+      <a class="nav-pill" href="/admin"${active === 'admin' ? ' aria-current="page"' : ''}>${ICONS.admin}<span>Admin</span></a>
+    </nav>`;
 }
 
 function renderPage(stories, { hideRead = false, hiddenCount = 0 } = {}) {
   const hasPending = stories.some((s) => s.summary_status === 'pending' || s.summary_status === 'processing');
   const refreshTag = hasPending ? '<meta http-equiv="refresh" content="20">' : '';
   const list = stories.length
-    ? stories.map(renderStory).join('\n')
+    ? stories.map((s, i) => renderStory(s, i === 0)).join('\n')
     : hideRead && hiddenCount
       ? '<p class="empty">All caught up — read stories are hidden.</p>'
       : '<p class="empty">No stories yet — the worker hasn\'t run.</p>';
   const navLinks = renderNavLinks();
+  const headerActions = `<div class="header-actions">${renderHideReadToggle('/', hideRead)}${navLinks}</div>`;
   const footer = `
     <div class="page-footer">
-      ${navLinks}
-      <div class="footer-actions">${renderMarkReadForm('/read-all')}${renderHideReadToggle('/', hideRead)}</div>
+      <div class="footer-actions">${renderMarkReadForm('/read-all')}</div>
       ${renderHiddenNote(hideRead, hiddenCount)}
     </div>`;
 
-  return renderLayout({ body: `${list}\n${footer}`, refreshTag, headerExtra: navLinks });
+  return renderLayout({ body: `${list}\n${footer}`, refreshTag, headerExtra: headerActions, liveBadge: hasPending });
 }
 
 function renderArchiveNav({ date, prevDate, nextDate }) {
   return `
-    <nav class="archive-nav">
-      <a href="/archive/${prevDate}">&larr; ${prevDate}</a>
+    <nav class="archive-nav" aria-label="Archive navigation">
+      <a class="archive-nav-btn" href="/archive/${prevDate}">${ICONS.chevronLeft}<span>${prevDate}</span></a>
       <span class="archive-date">${date}</span>
-      ${nextDate ? `<a href="/archive/${nextDate}">${nextDate} &rarr;</a>` : '<span class="nav-disabled">&rarr;</span>'}
+      ${
+        nextDate
+          ? `<a class="archive-nav-btn" href="/archive/${nextDate}"><span>${nextDate}</span>${ICONS.chevronRight}</a>`
+          : `<span class="archive-nav-btn is-disabled"><span>Today</span>${ICONS.chevronRight}</span>`
+      }
     </nav>`;
 }
 
 function renderArchivePage({ date, stories, prevDate, nextDate, hideRead = false, hiddenCount = 0 }) {
   const nav = renderArchiveNav({ date, prevDate, nextDate });
   const list = stories.length
-    ? stories.map(renderStory).join('\n')
+    ? stories.map((s, i) => renderStory(s, i === 0)).join('\n')
     : hideRead && hiddenCount
       ? '<p class="empty">All caught up — read stories are hidden.</p>'
       : '<p class="empty">No stories for this day.</p>';
+  const navLinks = renderNavLinks('archive');
+  const headerActions = `<div class="header-actions">${renderHideReadToggle(`/archive/${date}`, hideRead)}${navLinks}</div>`;
   const footer = `
     <div class="page-footer">
       ${nav}
-      <div class="footer-actions">${renderMarkReadForm(`/archive/${date}/read-all`)}${renderHideReadToggle(`/archive/${date}`, hideRead)}</div>
+      <div class="footer-actions">${renderMarkReadForm(`/archive/${date}/read-all`)}</div>
       ${renderHiddenNote(hideRead, hiddenCount)}
     </div>`;
 
-  return renderLayout({ body: `${nav}\n${list}\n${footer}`, headerExtra: renderNavLinks() });
+  return renderLayout({ body: `${nav}\n${list}\n${footer}`, headerExtra: headerActions });
 }
 
 const SUMMARY_STATUS_LABELS = {
@@ -259,7 +281,7 @@ function renderAdminPage({ settings, unreadByDay, summaryStats, ollama }) {
       ${renderOllamaMetrics(ollama)}
     </div>`;
 
-  return renderLayout({ body, headerExtra: renderNavLinks() });
+  return renderLayout({ body, headerExtra: `<div class="header-actions">${renderNavLinks('admin')}</div>` });
 }
 
 module.exports = { renderPage, renderArchivePage, renderAdminPage };
