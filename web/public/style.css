@@ -127,6 +127,10 @@ header h1 a:hover {
   white-space: nowrap;
 }
 
+.live-badge.is-hidden {
+  display: none;
+}
+
 .live-dot {
   width: 6px;
   height: 6px;
@@ -366,9 +370,12 @@ main {
   font-size: 0.78rem;
 }
 
-.summary {
+.summary-slot {
   grid-column: 2;
   grid-row: 2;
+}
+
+.summary {
   margin: 0.55rem 0 0;
   font-size: 0.85rem;
   color: var(--fg);
@@ -605,7 +612,7 @@ main {
     grid-row: 2;
   }
 
-  .summary {
+  .summary-slot {
     grid-column: 1;
     grid-row: 3;
   }

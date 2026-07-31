@@ -1,10 +1,13 @@
 'use strict';
 
 const path = require('node:path');
+const http = require('node:http');
 const express = require('express');
+const { WebSocketServer } = require('ws');
 const db = require('db');
 const { renderPage, renderArchivePage, renderAdminPage } = require('./render');
 const { getOllamaStatus } = require('./lib/ollama-status');
+const { attachLiveUpdates } = require('./lib/live-updates');
 const { log } = require('./lib/log');
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -210,6 +213,10 @@ app.get('/image/:id', (req, res) => {
   res.send(Buffer.from(image.image_data));
 });
 
-app.listen(PORT, () => {
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server, path: '/ws' });
+attachLiveUpdates(wss, { frontPageSize: HN_FRONTPAGE_SIZE });
+
+server.listen(PORT, () => {
   log(`[web] listening on http://localhost:${PORT}`);
 });

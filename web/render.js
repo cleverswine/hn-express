@@ -38,17 +38,20 @@ function formatAge(unixSeconds) {
 }
 
 function renderSummary(story) {
-  switch (story.summary_status) {
-    case 'done':
-      return `<p class="summary">${escapeHtml(story.summary)}</p>`;
-    case 'pending':
-    case 'processing':
-      return `<p class="summary summary-pending">Summarizing&hellip;</p>`;
-    case 'failed':
-      return `<p class="summary summary-failed">Summary unavailable.</p>`;
-    default:
-      return '';
-  }
+  const inner = (() => {
+    switch (story.summary_status) {
+      case 'done':
+        return `<p class="summary">${escapeHtml(story.summary)}</p>`;
+      case 'pending':
+      case 'processing':
+        return `<p class="summary summary-pending">Summarizing&hellip;</p>`;
+      case 'failed':
+        return `<p class="summary summary-failed">Summary unavailable.</p>`;
+      default:
+        return '';
+    }
+  })();
+  return `<div class="summary-slot">${inner}</div>`;
 }
 
 function renderStory(story, isLcpCandidate = false) {
@@ -62,7 +65,7 @@ function renderStory(story, isLcpCandidate = false) {
     : `<div class="story-media story-media-placeholder" aria-hidden="true"></div>`;
 
   return `
-    <article class="story${story.is_read ? ' read' : ''}">
+    <article class="story${story.is_read ? ' read' : ''}" data-story-id="${story.id}">
       ${image}
       <div class="story-body">
         <h2 class="story-title">
@@ -78,19 +81,19 @@ function renderStory(story, isLcpCandidate = false) {
     </article>`;
 }
 
-function renderLayout({ body, refreshTag = '', headerExtra = '', liveBadge = false }) {
+function renderLayout({ body, headerExtra = '', liveBadge = false }) {
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  ${refreshTag}
   <title>Hacker News Enhanced</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
 </head>
 <body>
   <header>
@@ -98,7 +101,7 @@ function renderLayout({ body, refreshTag = '', headerExtra = '', liveBadge = fal
       <div class="header-row">
         <div class="brand">
           <h1><a href="/">Hacker News Enhanced</a></h1>
-          ${liveBadge ? '<span class="live-badge"><span class="live-dot"></span>Updating</span>' : ''}
+          <span class="live-badge${liveBadge ? '' : ' is-hidden'}" id="live-badge"><span class="live-dot"></span>Updating</span>
         </div>
         ${headerExtra}
       </div>
@@ -142,7 +145,6 @@ function renderNavLinks(active = null) {
 
 function renderPage(stories, { hideRead = false, hiddenCount = 0 } = {}) {
   const hasPending = stories.some((s) => s.summary_status === 'pending' || s.summary_status === 'processing');
-  const refreshTag = hasPending ? '<meta http-equiv="refresh" content="20">' : '';
   const list = stories.length
     ? stories.map((s, i) => renderStory(s, i === 0)).join('\n')
     : hideRead && hiddenCount
@@ -156,7 +158,7 @@ function renderPage(stories, { hideRead = false, hiddenCount = 0 } = {}) {
       ${renderHiddenNote(hideRead, hiddenCount)}
     </div>`;
 
-  return renderLayout({ body: `${list}\n${footer}`, refreshTag, headerExtra: headerActions, liveBadge: hasPending });
+  return renderLayout({ body: `${list}\n${footer}`, headerExtra: headerActions, liveBadge: hasPending });
 }
 
 function renderArchiveNav({ date, prevDate, nextDate }) {
