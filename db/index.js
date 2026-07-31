@@ -259,8 +259,42 @@ function requeueFailed() {
   return info.changes;
 }
 
+function getDbPath() {
+  return process.env.DB_PATH || DEFAULT_DB_PATH;
+}
+
+/**
+ * Total vs. unread story counts for stories first seen in [startSec, endSec),
+ * regardless of current rank — used to chart unread backlog by day.
+ */
+function getStoryCountsByDay(startSec, endSec) {
+  const conn = getDb();
+  const row = conn
+    .prepare(
+      `SELECT COUNT(*) AS total, SUM(CASE WHEN read_at IS NULL THEN 1 ELSE 0 END) AS unread
+       FROM stories WHERE first_seen_at >= ? AND first_seen_at < ?`
+    )
+    .get(startSec, endSec);
+  return { total: row.total, unread: row.unread || 0 };
+}
+
+const SUMMARY_STATUSES = ['pending', 'processing', 'done', 'failed', 'skipped', 'canceled'];
+
+/**
+ * Story counts grouped by summary_status, across the whole database. Every
+ * known status is present in the result (0 if there are no matching rows).
+ */
+function getSummaryStatusCounts() {
+  const conn = getDb();
+  const rows = conn.prepare('SELECT summary_status, COUNT(*) AS count FROM stories GROUP BY summary_status').all();
+  const counts = Object.fromEntries(SUMMARY_STATUSES.map((s) => [s, 0]));
+  for (const row of rows) counts[row.summary_status] = row.count;
+  return counts;
+}
+
 module.exports = {
   getDb,
+  getDbPath,
   upsertFrontPage,
   getFrontPage,
   getHistoryDay,
@@ -272,4 +306,6 @@ module.exports = {
   markFailed,
   markSkipped,
   requeueFailed,
+  getStoryCountsByDay,
+  getSummaryStatusCounts,
 };
