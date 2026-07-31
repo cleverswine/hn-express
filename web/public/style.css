@@ -135,6 +135,11 @@ main {
   color: var(--muted);
 }
 
+.meta-updated {
+  opacity: 0.7;
+  cursor: default;
+}
+
 .summary {
   grid-column: 2;
   grid-row: 2;
@@ -160,7 +165,7 @@ main {
   padding: 2rem 0;
 }
 
-.archive-link,
+.nav-link,
 .archive-nav a {
   display: inline-block;
   line-height: 1;
@@ -172,13 +177,13 @@ main {
   transition: border-color 0.15s ease, color 0.15s ease;
 }
 
-.archive-link {
+.nav-link {
   color: var(--muted);
   font-size: 0.85rem;
   white-space: nowrap;
 }
 
-.archive-link:hover {
+.nav-link:hover {
   color: var(--fg);
   border-color: var(--muted);
 }
@@ -239,4 +244,91 @@ main {
 .nav-disabled {
   color: var(--muted);
   opacity: 0.4;
+}
+
+.nav-links {
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+.admin-section {
+  margin: 0 0 2.5rem;
+}
+
+.admin-section h2 {
+  font-size: 1.1rem;
+  margin: 0 0 1rem;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.admin-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card-bg);
+  padding: 0.9rem 1rem;
+}
+
+.admin-card h3 {
+  margin: 0 0 0.6rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.admin-table th,
+.admin-table td {
+  text-align: left;
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-table .admin-key {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.admin-note {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.75rem;
+}
+
+.stat-tile {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card-bg);
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.stat-label {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-top: 0.15rem;
 }
