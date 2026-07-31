@@ -205,11 +205,21 @@ main {
   text-align: center;
 }
 
-.mark-read-form {
+.footer-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   margin: 0.75rem 0 0;
 }
 
-.mark-read-btn {
+.mark-read-form,
+.hide-read-form {
+  margin: 0;
+}
+
+.mark-read-btn,
+.hide-read-btn {
   display: inline-block;
   line-height: 1;
   padding: 0.7rem 0.9rem 0.5rem 0.9rem;
@@ -223,9 +233,17 @@ main {
   transition: border-color 0.15s ease, color 0.15s ease;
 }
 
-.mark-read-btn:hover {
+.mark-read-btn:hover,
+.hide-read-btn:hover {
   color: var(--fg);
   border-color: var(--muted);
+}
+
+.hidden-note {
+  margin: 0.6rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  opacity: 0.8;
 }
 
 .archive-nav {

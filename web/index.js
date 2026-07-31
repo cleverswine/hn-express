@@ -11,6 +11,8 @@ const PORT = Number(process.env.PORT) || 3000;
 const HN_FRONTPAGE_SIZE = Number(process.env.HN_FRONTPAGE_SIZE) || 30;
 const UNREAD_HISTORY_DAYS = 7;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const HIDE_READ_COOKIE = 'hideRead';
+const RETURN_TO_RE = /^\/$|^\/archive$|^\/archive\/\d{4}-\d{2}-\d{2}$/;
 
 function formatDate(d) {
   const y = d.getFullYear();
@@ -32,6 +34,22 @@ function addDays(date, n) {
   const d = new Date(date);
   d.setDate(d.getDate() + n);
   return d;
+}
+
+function parseCookies(req) {
+  const header = req.headers.cookie;
+  if (!header) return {};
+  const cookies = {};
+  for (const pair of header.split(';')) {
+    const idx = pair.indexOf('=');
+    if (idx === -1) continue;
+    cookies[pair.slice(0, idx).trim()] = decodeURIComponent(pair.slice(idx + 1).trim());
+  }
+  return cookies;
+}
+
+function getHideRead(req) {
+  return parseCookies(req)[HIDE_READ_COOKIE] === 'true';
 }
 
 function envOr(name, fallback) {
@@ -107,16 +125,31 @@ function getUnreadByDay() {
 const app = express();
 
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.urlencoded({ extended: false }));
 
 app.get('/', (req, res) => {
-  const stories = db.getFrontPage(HN_FRONTPAGE_SIZE);
-  res.type('html').send(renderPage(stories));
+  const hideRead = getHideRead(req);
+  let stories = db.getFrontPage(HN_FRONTPAGE_SIZE);
+  const totalCount = stories.length;
+  if (hideRead) stories = stories.filter((s) => !s.is_read);
+  res.type('html').send(renderPage(stories, { hideRead, hiddenCount: totalCount - stories.length }));
 });
 
 app.post('/read-all', (req, res) => {
   const stories = db.getFrontPage(HN_FRONTPAGE_SIZE);
   db.markRead(stories.map((s) => s.id));
   res.redirect('/');
+});
+
+app.post('/toggle-hide-read', (req, res) => {
+  res.cookie(HIDE_READ_COOKIE, String(!getHideRead(req)), {
+    path: '/',
+    maxAge: 400 * 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    sameSite: 'lax',
+  });
+  const returnTo = req.body?.returnTo;
+  res.redirect(RETURN_TO_RE.test(returnTo) ? returnTo : '/');
 });
 
 app.get('/archive', (req, res) => {
@@ -129,7 +162,10 @@ app.get('/archive/:date', (req, res) => {
 
   const startSec = Math.floor(date.getTime() / 1000);
   const endSec = startSec + 86400;
-  const stories = db.getHistoryDay(startSec, endSec);
+  const hideRead = getHideRead(req);
+  let stories = db.getHistoryDay(startSec, endSec);
+  const totalCount = stories.length;
+  if (hideRead) stories = stories.filter((s) => !s.is_read);
 
   const dateStr = formatDate(date);
   const today = formatDate(new Date());
@@ -139,6 +175,8 @@ app.get('/archive/:date', (req, res) => {
       stories,
       prevDate: formatDate(addDays(date, -1)),
       nextDate: dateStr < today ? formatDate(addDays(date, 1)) : null,
+      hideRead,
+      hiddenCount: totalCount - stories.length,
     })
   );
 });

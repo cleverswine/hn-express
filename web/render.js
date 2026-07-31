@@ -103,6 +103,19 @@ function renderMarkReadForm(action) {
     </form>`;
 }
 
+function renderHideReadToggle(currentPath, hideRead) {
+  return `
+    <form class="hide-read-form" method="POST" action="/toggle-hide-read">
+      <input type="hidden" name="returnTo" value="${escapeHtml(currentPath)}">
+      <button type="submit" class="hide-read-btn">${hideRead ? 'Show read stories' : 'Hide read stories'}</button>
+    </form>`;
+}
+
+function renderHiddenNote(hideRead, hiddenCount) {
+  if (!hideRead || !hiddenCount) return '';
+  return `<p class="hidden-note">${hiddenCount} read stor${hiddenCount === 1 ? 'y' : 'ies'} hidden</p>`;
+}
+
 function renderNavLinks() {
   return `
     <div class="nav-links">
@@ -111,14 +124,21 @@ function renderNavLinks() {
     </div>`;
 }
 
-function renderPage(stories) {
+function renderPage(stories, { hideRead = false, hiddenCount = 0 } = {}) {
   const hasPending = stories.some((s) => s.summary_status === 'pending' || s.summary_status === 'processing');
   const refreshTag = hasPending ? '<meta http-equiv="refresh" content="20">' : '';
   const list = stories.length
     ? stories.map(renderStory).join('\n')
-    : '<p class="empty">No stories yet — the worker hasn\'t run.</p>';
+    : hideRead && hiddenCount
+      ? '<p class="empty">All caught up — read stories are hidden.</p>'
+      : '<p class="empty">No stories yet — the worker hasn\'t run.</p>';
   const navLinks = renderNavLinks();
-  const footer = `<div class="page-footer">${navLinks}${renderMarkReadForm('/read-all')}</div>`;
+  const footer = `
+    <div class="page-footer">
+      ${navLinks}
+      <div class="footer-actions">${renderMarkReadForm('/read-all')}${renderHideReadToggle('/', hideRead)}</div>
+      ${renderHiddenNote(hideRead, hiddenCount)}
+    </div>`;
 
   return renderLayout({ body: `${list}\n${footer}`, refreshTag, headerExtra: navLinks });
 }
@@ -132,12 +152,19 @@ function renderArchiveNav({ date, prevDate, nextDate }) {
     </nav>`;
 }
 
-function renderArchivePage({ date, stories, prevDate, nextDate }) {
+function renderArchivePage({ date, stories, prevDate, nextDate, hideRead = false, hiddenCount = 0 }) {
   const nav = renderArchiveNav({ date, prevDate, nextDate });
   const list = stories.length
     ? stories.map(renderStory).join('\n')
-    : '<p class="empty">No stories for this day.</p>';
-  const footer = `<div class="page-footer">${nav}${renderMarkReadForm(`/archive/${date}/read-all`)}</div>`;
+    : hideRead && hiddenCount
+      ? '<p class="empty">All caught up — read stories are hidden.</p>'
+      : '<p class="empty">No stories for this day.</p>';
+  const footer = `
+    <div class="page-footer">
+      ${nav}
+      <div class="footer-actions">${renderMarkReadForm(`/archive/${date}/read-all`)}${renderHideReadToggle(`/archive/${date}`, hideRead)}</div>
+      ${renderHiddenNote(hideRead, hiddenCount)}
+    </div>`;
 
   return renderLayout({ body: `${nav}\n${list}\n${footer}`, headerExtra: renderNavLinks() });
 }
