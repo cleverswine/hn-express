@@ -61,13 +61,14 @@ cd worker
 npm start
 ```
 
-This runs both worker loops continuously: refetching the HN front page every `FETCH_INTERVAL_MS` (default 15 min), and continuously draining any stories that don't have a summary yet.
+This runs all three worker loops continuously: refetching the HN front page every `FETCH_INTERVAL_MS` (default 15 min), continuously draining any stories that don't have a summary yet, and purging stories (no longer on the front page) first seen more than `CLEANUP_MAX_AGE_DAYS` ago (default 14 days) every `CLEANUP_INTERVAL_MS` (default 24h).
 
 For a one-off manual run instead of the continuous loop:
 
 ```
 npm run fetch:once -w worker       # fetch the current HN front page once
 npm run summarize:once -w worker   # summarize all currently-pending stories once, then exit
+npm run cleanup:once -w worker     # purge stories older than CLEANUP_MAX_AGE_DAYS once, then exit
 ```
 
 ### Retrying failed summaries

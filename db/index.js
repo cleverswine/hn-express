@@ -278,6 +278,19 @@ function getStoryCountsByDay(startSec, endSec) {
   return { total: row.total, unread: row.unread || 0 };
 }
 
+/**
+ * Delete stories first seen before the given cutoff (unix seconds). Stories
+ * still on the front page (rank IS NOT NULL) are kept regardless of age,
+ * since a story can't be both current and old enough to purge. Returns the
+ * number of rows deleted.
+ */
+function deleteOldStories(cutoffSec) {
+  const info = getDb()
+    .prepare('DELETE FROM stories WHERE first_seen_at < ? AND rank IS NULL')
+    .run(cutoffSec);
+  return info.changes;
+}
+
 const SUMMARY_STATUSES = ['pending', 'processing', 'done', 'failed', 'skipped', 'canceled'];
 
 /**
@@ -306,6 +319,7 @@ module.exports = {
   markFailed,
   markSkipped,
   requeueFailed,
+  deleteOldStories,
   getStoryCountsByDay,
   getSummaryStatusCounts,
 };
