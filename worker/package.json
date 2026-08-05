@@ -11,6 +11,7 @@
     "fetch:once": "node --env-file-if-exists=../.env scripts/fetch-once.js",
     "summarize:once": "node --env-file-if-exists=../.env scripts/summarize-once.js",
     "retry-failed": "node --env-file-if-exists=../.env scripts/retry-failed.js",
+    "cleanup:once": "node --env-file-if-exists=../.env scripts/cleanup-once.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {

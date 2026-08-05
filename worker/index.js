@@ -11,6 +11,8 @@ const FETCH_INTERVAL_MS = Number(process.env.FETCH_INTERVAL_MS) || 15 * 60 * 100
 const SUMMARY_BATCH_SIZE = Number(process.env.SUMMARY_BATCH_SIZE) || 5;
 const SUMMARY_IDLE_SLEEP_MS = Number(process.env.SUMMARY_IDLE_SLEEP_MS) || 15000;
 const RETRY_FAILED_ON_START = process.argv.includes('--retry-failed') || process.env.RETRY_FAILED === 'true';
+const CLEANUP_INTERVAL_MS = Number(process.env.CLEANUP_INTERVAL_MS) || 24 * 60 * 60 * 1000;
+const CLEANUP_MAX_AGE_DAYS = Number(process.env.CLEANUP_MAX_AGE_DAYS) || 14;
 
 // Summarization is the only thing that hits Ollama, so it's the only loop
 // gated to active hours (local time, per TZ) — no point burning home-server
@@ -75,13 +77,26 @@ async function summarizeLoop() {
   }
 }
 
+async function cleanupLoop() {
+  while (true) {
+    try {
+      const cutoff = Math.floor(Date.now() / 1000) - CLEANUP_MAX_AGE_DAYS * 24 * 60 * 60;
+      const deleted = db.deleteOldStories(cutoff);
+      log(`[cleanup] deleted ${deleted} stor${deleted === 1 ? 'y' : 'ies'} older than ${CLEANUP_MAX_AGE_DAYS} days`);
+    } catch (err) {
+      logError('[cleanup] failed:', err);
+    }
+    await sleep(CLEANUP_INTERVAL_MS);
+  }
+}
+
 async function main() {
   log('[worker] starting hn-express worker');
   if (RETRY_FAILED_ON_START) {
     const requeued = db.requeueFailed();
     log(`[worker] --retry-failed: requeued ${requeued} failed stor${requeued === 1 ? 'y' : 'ies'} for retry`);
   }
-  await Promise.all([fetchLoop(), summarizeLoop()]);
+  await Promise.all([fetchLoop(), summarizeLoop(), cleanupLoop()]);
 }
 
 main().catch((err) => {
