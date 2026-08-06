@@ -4,7 +4,7 @@ const { JSDOM } = require('jsdom');
 const db = require('db');
 const { mapPool } = require('./lib/pool');
 const { extractArticle, downloadImage } = require('./extract');
-const { summarizeText, OLLAMA_MODEL } = require('./ollama');
+const { summarizeText, CLAUDE_MODEL } = require('./claude');
 const { describeError } = require('./lib/errors');
 const { log, logError } = require('./lib/log');
 
@@ -45,7 +45,7 @@ async function summarizeOne(story) {
       summary,
       imageData: image?.data,
       imageType: image?.contentType,
-      model: OLLAMA_MODEL,
+      model: CLAUDE_MODEL,
     });
     return { id: story.id, status: 'done' };
   } catch (err) {

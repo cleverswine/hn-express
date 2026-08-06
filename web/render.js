@@ -240,31 +240,12 @@ function renderSummaryStats(stats) {
     <p class="admin-note">${total} stories tracked in total.</p>`;
 }
 
-function renderOllamaMetrics(ollama) {
-  if (!ollama) {
-    return '<p class="admin-note">Ollama metrics unavailable (couldn\'t reach the configured OLLAMA_HOST).</p>';
-  }
-  const version = ollama.version ? `<p class="admin-note">Ollama version ${escapeHtml(ollama.version)}</p>` : '';
-  if (!ollama.models.length) {
-    return `${version}<p class="admin-note">No models currently loaded.</p>`;
-  }
-  const rows = ollama.models
-    .map((m) => {
-      const sizeGb = m.size ? `${(m.size / 1e9).toFixed(2)} GB` : '—';
-      const vramGb = m.size_vram ? `${(m.size_vram / 1e9).toFixed(2)} GB` : '—';
-      const expires = m.expires_at ? new Date(m.expires_at).toLocaleString() : '—';
-      return `<tr><td>${escapeHtml(m.name || m.model)}</td><td>${sizeGb}</td><td>${vramGb}</td><td>${escapeHtml(expires)}</td></tr>`;
-    })
-    .join('\n');
-  return `
-    ${version}
-    <table class="admin-table">
-      <thead><tr><th>Model</th><th>Size</th><th>VRAM</th><th>Expires</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
+function renderClaudeStatus(claude) {
+  const keyNote = claude.apiKeySet ? 'configured' : 'missing — set ANTHROPIC_API_KEY';
+  return `<p class="admin-note">Model: ${escapeHtml(claude.model)} · API key: ${keyNote}</p>`;
 }
 
-function renderAdminPage({ settings, unreadByDay, summaryStats, ollama }) {
+function renderAdminPage({ settings, unreadByDay, summaryStats, claude }) {
   const body = `
     <div class="admin-section">
       <h2>Settings</h2>
@@ -279,8 +260,8 @@ function renderAdminPage({ settings, unreadByDay, summaryStats, ollama }) {
       ${renderSummaryStats(summaryStats)}
     </div>
     <div class="admin-section">
-      <h2>Ollama</h2>
-      ${renderOllamaMetrics(ollama)}
+      <h2>Claude</h2>
+      ${renderClaudeStatus(claude)}
     </div>`;
 
   return renderLayout({ body, headerExtra: `<div class="header-actions">${renderNavLinks('admin')}</div>` });

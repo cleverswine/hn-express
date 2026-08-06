@@ -6,7 +6,7 @@ const express = require('express');
 const { WebSocketServer } = require('ws');
 const db = require('db');
 const { renderPage, renderArchivePage, renderAdminPage } = require('./render');
-const { getOllamaStatus } = require('./lib/ollama-status');
+const { getClaudeStatus } = require('./lib/claude-status');
 const { attachLiveUpdates } = require('./lib/live-updates');
 const { log } = require('./lib/log');
 
@@ -99,11 +99,10 @@ function buildSettings() {
       ],
     },
     {
-      section: 'Worker: Ollama',
+      section: 'Worker: Claude',
       items: [
-        { key: 'OLLAMA_HOST', value: envOr('OLLAMA_HOST', 'http://127.0.0.1:11434') },
-        { key: 'OLLAMA_MODEL', value: envOr('OLLAMA_MODEL', 'llama3.2') },
-        { key: 'OLLAMA_TIMEOUT_MS', value: envOr('OLLAMA_TIMEOUT_MS', 120000) },
+        { key: 'CLAUDE_MODEL', value: envOr('CLAUDE_MODEL', 'claude-haiku-4-5') },
+        { key: 'CLAUDE_TIMEOUT_MS', value: envOr('CLAUDE_TIMEOUT_MS', 60000) },
       ],
     },
   ];
@@ -199,8 +198,8 @@ app.get('/admin', async (req, res) => {
   const settings = buildSettings();
   const unreadByDay = getUnreadByDay();
   const summaryStats = db.getSummaryStatusCounts();
-  const ollama = await getOllamaStatus();
-  res.type('html').send(renderAdminPage({ settings, unreadByDay, summaryStats, ollama }));
+  const claude = getClaudeStatus();
+  res.type('html').send(renderAdminPage({ settings, unreadByDay, summaryStats, claude }));
 });
 
 app.get('/image/:id', (req, res) => {

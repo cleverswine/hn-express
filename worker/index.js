@@ -14,9 +14,9 @@ const RETRY_FAILED_ON_START = process.argv.includes('--retry-failed') || process
 const CLEANUP_INTERVAL_MS = Number(process.env.CLEANUP_INTERVAL_MS) || 24 * 60 * 60 * 1000;
 const CLEANUP_MAX_AGE_DAYS = Number(process.env.CLEANUP_MAX_AGE_DAYS) || 14;
 
-// Summarization is the only thing that hits Ollama, so it's the only loop
-// gated to active hours (local time, per TZ) — no point burning home-server
-// GPU time summarizing stories overnight when nobody's reading them.
+// Summarization is the only thing that calls the Claude API, so it's the
+// only loop gated to active hours (local time, per TZ) — no point spending
+// API calls summarizing stories overnight when nobody's reading them.
 const ACTIVE_HOURS_START = Number(process.env.ACTIVE_HOURS_START ?? 7);
 const ACTIVE_HOURS_END = Number(process.env.ACTIVE_HOURS_END ?? 23);
 
