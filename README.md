@@ -1,6 +1,6 @@
 # HN Express
 
-Shows the Hacker News front page (via the official HN API, in HN's own rank order), with an AI-generated summary and representative image for each linked article. Summaries are generated in the background by a locally-running [Ollama](https://ollama.com) model — never on the request path. The web UI is plain server-rendered HTML that only reads from a local SQLite database.
+Shows the Hacker News front page (via the official HN API, in HN's own rank order), with an AI-generated summary and representative image for each linked article. Summaries are generated in the background by the [Claude API](https://www.anthropic.com/api) — never on the request path. The web UI is plain server-rendered HTML that only reads from a local SQLite database.
 
 ## Screenshot
 
@@ -11,17 +11,13 @@ Shows the Hacker News front page (via the official HN API, in HN's own rank orde
 Three npm workspaces sharing one SQLite file:
 
 - `db/` — SQLite schema + query helpers.
-- `worker/` — background process: polls the HN API into the database, then summarizes articles (fetch → extract text/image, falling back to a headless browser when needed → Ollama).
+- `worker/` — background process: polls the HN API into the database, then summarizes articles (fetch → extract text/image, falling back to a headless browser when needed → Claude API).
 - `web/` — Express server that renders the front page from the database.
 
 ## Prerequisites
 
 - Node.js 22.5+ (uses the built-in `node:sqlite`; developed on Node 26).
-- [Ollama](https://ollama.com) installed and running locally, with a model pulled:
-  ```
-  ollama pull llama3.2
-  ```
-  (or set `OLLAMA_MODEL` to whatever model you've pulled — see Configuration below).
+- An [Anthropic API key](https://console.anthropic.com), set as `ANTHROPIC_API_KEY` (see Configuration below).
 
 ## Setup
 
@@ -30,7 +26,7 @@ npm install
 npx playwright install chromium
 ```
 
-Optionally copy `.env.example` to `.env` and adjust values (all settings have working defaults):
+Copy `.env.example` to `.env` and set `ANTHROPIC_API_KEY` (every other setting has a working default):
 
 ```
 cp .env.example .env
@@ -73,7 +69,7 @@ npm run cleanup:once -w worker     # purge stories older than CLEANUP_MAX_AGE_DA
 
 ### Retrying failed summaries
 
-Stories whose summary failed (extraction or Ollama error) are marked `failed` and are **not** retried automatically — this avoids hammering a broken endpoint indefinitely. Once whatever caused the failures is fixed (e.g. Ollama wasn't reachable yet), requeue and reprocess them:
+Stories whose summary failed (extraction or Claude API error) are marked `failed` and are **not** retried automatically — this avoids hammering a broken endpoint indefinitely. Once whatever caused the failures is fixed (e.g. a missing `ANTHROPIC_API_KEY` or a rate limit), requeue and reprocess them:
 
 ```
 npm run retry-failed -w worker
@@ -102,13 +98,13 @@ cd web
 npm start
 ```
 
-Serves the UI at `http://localhost:3000` (or `$PORT`) purely from whatever is already in the SQLite database — it never fetches from HN or calls Ollama itself, so run the worker (at least once) separately to populate data.
+Serves the UI at `http://localhost:3000` (or `$PORT`) purely from whatever is already in the SQLite database — it never fetches from HN or calls the Claude API itself, so run the worker (at least once) separately to populate data.
 
 ## Running with Docker
 
 Each workspace has its own `Dockerfile` (`web/Dockerfile`, `worker/Dockerfile`); both are built from the **repo root** as the build context, since they need the sibling `db/` package. `docker-compose.yml` runs both together, bind-mounting `$HOME/.config/hn/data` from the host into both containers so they share the same SQLite database — the same path the app uses by default outside Docker (see [Data](#data)).
 
-Ollama itself is expected to keep running on the host, not in a container — the worker reaches it at `http://host.docker.internal:11434` by default (wired up via `extra_hosts` in the compose file, works on Docker 20.10+ on Linux/Mac/Windows).
+Set `ANTHROPIC_API_KEY` in `.env` before running — the worker container needs it to call the Claude API and there's no default.
 
 ### Both together (compose)
 
@@ -116,15 +112,15 @@ Ollama itself is expected to keep running on the host, not in a container — th
 docker compose up --build
 ```
 
-Then open `http://localhost:3000`. Optionally copy `.env.example` to `.env` first — compose reads it automatically for the defaults shown in `docker-compose.yml` (`HN_FRONTPAGE_SIZE`, `OLLAMA_MODEL`, `PORT`, etc.); everything works without one.
+Then open `http://localhost:3000`. Copy `.env.example` to `.env` first and set `ANTHROPIC_API_KEY` — compose reads it automatically for the defaults shown in `docker-compose.yml` (`HN_FRONTPAGE_SIZE`, `CLAUDE_MODEL`, `PORT`, etc.).
 
 ### Worker standalone (Docker)
 
 ```
 docker build -f worker/Dockerfile -t hn-express-worker .
 docker run --rm \
-  --add-host=host.docker.internal:host-gateway \
-  -e OLLAMA_MODEL=llama3.2 \
+  -e ANTHROPIC_API_KEY=sk-ant-... \
+  -e CLAUDE_MODEL=claude-haiku-4-5 \
   -v "$HOME/.config/hn/data:/root/.config/hn/data" \
   hn-express-worker
 ```
@@ -140,7 +136,7 @@ Uses the same host bind mount as the worker above so both containers see the sam
 
 ## Configuration
 
-All configuration is via environment variables (see `.env.example` for the full list and defaults), including `PORT`, `HN_FRONTPAGE_SIZE`, `FETCH_INTERVAL_MS`, `SUMMARY_CONCURRENCY`, `OLLAMA_HOST`, and `OLLAMA_MODEL`.
+All configuration is via environment variables (see `.env.example` for the full list and defaults), including `PORT`, `HN_FRONTPAGE_SIZE`, `FETCH_INTERVAL_MS`, `SUMMARY_CONCURRENCY`, `ANTHROPIC_API_KEY`, and `CLAUDE_MODEL`.
 
 ## Data
 

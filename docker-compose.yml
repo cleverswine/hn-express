@@ -1,14 +1,12 @@
 # Runs the web UI and the background worker together, sharing one SQLite
 # database file bind-mounted from the host at $HOME/.config/hn/data — the
 # same location the db package defaults to when run outside Docker (see
-# db/index.js), so dev mode and Docker both land on the same file. Ollama is
-# expected to run on the host (not in this compose file) —
-# `host.docker.internal` is wired up below so the worker container can reach
-# it at the usual http://localhost:11434.
+# db/index.js), so dev mode and Docker both land on the same file.
 #
 # Config: copy .env.example to .env at the repo root and adjust; compose
 # auto-loads it for the ${VAR:-default} substitutions below. Everything has
-# a working default, so .env is optional.
+# a working default except ANTHROPIC_API_KEY, which is required for
+# summarization — set it in .env before running.
 
 x-env: &env
   TZ: ${TZ:-America/Chicago}
@@ -23,9 +21,8 @@ x-env: &env
   ACTIVE_HOURS_END: ${ACTIVE_HOURS_END:-23}
   CLEANUP_INTERVAL_MS: ${CLEANUP_INTERVAL_MS:-86400000}
   CLEANUP_MAX_AGE_DAYS: ${CLEANUP_MAX_AGE_DAYS:-14}
-  OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
-  OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
-  OLLAMA_TIMEOUT_MS: ${OLLAMA_TIMEOUT_MS:-120000}
+  CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-haiku-4-5}
+  CLAUDE_TIMEOUT_MS: ${CLAUDE_TIMEOUT_MS:-60000}
 
 services:
   worker:
@@ -34,8 +31,7 @@ services:
       dockerfile: worker/Dockerfile
     environment:
       <<: *env
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
     volumes:
       - ${HOME}/.config/hn/data:/root/.config/hn/data
     restart: unless-stopped
