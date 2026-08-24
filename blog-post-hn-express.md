@@ -51,6 +51,16 @@ That was later replaced with a lightweight WebSocket layer: the web server keeps
 
 ## Running it
 
-The whole thing is designed to run comfortably on a single machine: `npm run dev` starts both processes side by side, or each can run standalone (including in Docker, sharing one bind-mounted SQLite file). The only external dependency is Ollama running on the host — `ollama pull llama3.2` and it just works, no API keys, no cloud bill, no rate limits.
+The whole thing is designed to run comfortably on a single machine: `npm run dev` starts both processes side by side, or each can run standalone. The only external dependency is Ollama running on the host — `ollama pull llama3.2` and it just works, no API keys, no cloud bill, no rate limits.
+
+For anything beyond local development, Docker Compose is the easiest path in — it's genuinely a one-liner:
+
+```
+docker compose up --build
+```
+
+That single command builds and starts *both* the web and worker containers, wires them to the same host-mounted SQLite database (`$HOME/.config/hn/data`, the same path the app uses outside Docker), and points the worker at Ollama running on the host via `host.docker.internal` — no manual networking setup required. Open `http://localhost:3000` and the front page starts filling in as soon as the worker's first fetch completes.
+
+There's no database to provision, no separate cache or queue to stand up, and no environment file required to get started — every setting in `.env.example` already has a working default, so `docker compose up --build` is enough to go from a fresh clone to a running app. Each workspace also has its own standalone `Dockerfile` (built from the repo root, since both need the sibling `db/` package) for cases where the web and worker need to be deployed or scaled independently.
 
 That's really the point of HN Express: a genuinely useful daily tool, built on infrastructure you already control.
