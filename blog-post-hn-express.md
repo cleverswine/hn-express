@@ -1,15 +1,15 @@
 ---
 title: "Building HN Express: A Self-Hosted Hacker News Reader with Local AI Summaries"
 date: 2026-08-24
-description: "How HN Express pairs the Hacker News API with a locally-running Ollama model to summarize the front page — and the architecture that keeps AI generation off the request path."
+description: "How HN Express pairs the Hacker News API with a locally-running Ollama model to summarize the front page in the background."
 tags: [nodejs, sqlite, ollama, hacker-news, self-hosted]
 ---
 
 I read Hacker News the same way most people do: scan the front page, open a few tabs, skim the ones that hold my attention, and lose the rest to tab rot. **HN Express** is a small project built to fix that — it shows the HN front page in HN's own rank order, but with an AI-generated summary and a representative image next to every story, so I can decide what's worth a click before I click it.
 
-## The constraint that shaped everything
+## Summarizing in the background
 
-The one rule I set early was: **summarization never happens on the request path.** Nobody should sit on a loading spinner waiting for an LLM to finish reading an article. That single constraint pushed the whole design toward a producer/consumer split:
+Summarization happens in the background, separate from anyone loading the page. That pushed the design toward a producer/consumer split:
 
 - A **worker** process polls the HN API, fetches article content, and asks a local [Ollama](https://ollama.com) model to summarize it — entirely in the background.
 - A **web** process only ever reads from a SQLite database and renders HTML. It never touches the network for HN, never calls Ollama, and stays fast no matter what the worker is doing.
